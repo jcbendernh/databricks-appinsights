@@ -17,6 +17,27 @@ The notebook runs four KQL queries and displays each result as a pandas DataFram
 
 Gen AI attributes (such as `gen_ai.operation.name`, `gen_ai.agent.name`, `gen_ai.tool.name`, `gen_ai.request.model`, and `gen_ai.usage.*_tokens`) are read from the `Properties` column of `AppDependencies`. Rows are filtered to Microsoft Foundry / Azure AI Agents spans, tool-call spans, or dependencies that report a model or token usage.
 
+## Architecture
+
+```mermaid
+sequenceDiagram
+    participant NB as Databricks notebook
+    participant SS as Key Vault-backed secret scope
+    participant KV as Azure Key Vault
+    participant Entra as Microsoft Entra ID
+    participant LA as Log Analytics workspace
+
+    NB->>SS: dbutils.secrets.get(tenant ID, client ID, client secret)
+    SS->>KV: Retrieve secrets
+    KV-->>SS: Secret values
+    SS-->>NB: Secret values
+    NB->>Entra: ClientSecretCredential requests token
+    Entra-->>NB: Access token
+    NB->>LA: LogsQueryClient.query_workspace(KQL, timespan)
+    LA-->>NB: Query results
+    NB->>NB: Load into pandas DataFrame and display
+```
+
 ## Process
 
 1. **Configure access**
